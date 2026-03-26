@@ -1,0 +1,28 @@
+========================================
+  도시 대기질 실시간 모니터링 시스템
+  GitHub 레포지토리 정보
+========================================
+
+GitHub ID       : seyong628
+Repository Name : air-quality-monitor
+Repository URL  : https://github.com/seyong628/air-quality-monitor
+
+주요 파일
+  - python/injector.py     : 랜덤 대기질 데이터 생성기
+  - sql/schema.sql         : MySQL 스키마
+  - nodered/flow.json      : Node-RED 대시보드 플로우
+  - grafana/dashboard.json : Grafana 대시보드
+  - project.md             : 동작 설명 + Mermaid 플로우차트
+  - setup.sh               : 전체 환경 자동 설치 스크립트
+
+실행 환경
+  - OS       : Zorin OS 17 (VMware Workstation)
+  - DB       : MySQL 8.0 (air_monitor)
+  - Tool 1   : Node-RED v4.1.8 + Dashboard v3.6.6
+  - Tool 2   : Grafana 10.x
+  - Language : Python 3, JavaScript
+
+접속 주소
+  - Node-RED 대시보드 : http://localhost:1880/ui
+  - Grafana 대시보드  : http://localhost:3000
+========================================

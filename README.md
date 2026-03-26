@@ -41,15 +41,7 @@ nohup python3 python/injector.py --interval 5 > /tmp/injector.log 2>&1 &
 
 ---
 
-## 스크린샷
 
-> *영상 촬영 후 스크린샷 추가 예정*
-
-| Node-RED Dashboard | Grafana Dashboard |
-|:------------------:|:-----------------:|
-| ![nodered](#)      | ![grafana](#)     |
-
----
 
 ## 상세 문서
 

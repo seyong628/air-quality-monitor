@@ -246,21 +246,4 @@ sqlite_node-red/
 
 ---
 
-## 11. 영상 촬영 체크리스트
 
-### 영상 1 — Node-RED 실시간 모니터링
-- [ ] 터미널에서 injector.py 실행 → 콘솔 로그 확인
-- [ ] `http://localhost:1880` 편집기 — flow 전체 구성 보여주기
-- [ ] `http://localhost:1880/ui` 대시보드
-  - 요약 카드 (PM2.5, PM10, CO2, 기온, 알람 수)
-  - PM2.5 라인 차트에 데이터 추가되는 장면
-  - 측정값 테이블 값 변하는 장면
-
-### 영상 2 — Grafana 실시간 모니터링
-- [ ] `http://localhost:3000` 로그인
-- [ ] Configuration → Data sources → AirMonitor_MySQL → Test 성공 화면
-- [ ] "도시 대기질 모니터링" 대시보드 열기
-- [ ] 5초 자동 갱신 장면
-  - PM2.5 Time series 데이터 추가
-  - Stat 패널 값 변하는 장면
-  - 알람 테이블 표시

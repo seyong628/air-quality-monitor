@@ -1,0 +1,240 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_AIRMONITOR_MYSQL",
+      "label": "AirMonitor_MySQL",
+      "type": "datasource",
+      "pluginId": "mysql",
+      "pluginName": "MySQL"
+    }
+  ],
+  "__requires": [
+    { "type": "datasource", "id": "mysql",      "name": "MySQL",       "version": "1.0.0" },
+    { "type": "grafana",    "id": "grafana",     "name": "Grafana",     "version": "10.0.0" },
+    { "type": "panel",      "id": "timeseries",  "name": "Time series", "version": "" },
+    { "type": "panel",      "id": "stat",        "name": "Stat",        "version": "" },
+    { "type": "panel",      "id": "table",       "name": "Table",       "version": "" },
+    { "type": "panel",      "id": "gauge",       "name": "Gauge",       "version": "" },
+    { "type": "panel",      "id": "bargauge",    "name": "Bar gauge",   "version": "" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+
+    {
+      "id": 1, "type": "stat", "title": "평균 PM2.5 (μg/m³)",
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 0 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short", "decimals": 1,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 16 },
+            { "color": "orange", "value": 36 },
+            { "color": "red",    "value": 76 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+        "rawSql": "SELECT NOW() AS time, ROUND(AVG(pm25),1) AS value FROM air_readings WHERE id IN (SELECT MAX(id) FROM air_readings GROUP BY station_id)",
+        "format": "time_series", "refId": "A"
+      }]
+    },
+
+    {
+      "id": 2, "type": "stat", "title": "평균 PM10 (μg/m³)",
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 0 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short", "decimals": 1,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "orange", "value": 81 },
+            { "color": "red",    "value": 151 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+        "rawSql": "SELECT NOW() AS time, ROUND(AVG(pm10),1) AS value FROM air_readings WHERE id IN (SELECT MAX(id) FROM air_readings GROUP BY station_id)",
+        "format": "time_series", "refId": "A"
+      }]
+    },
+
+    {
+      "id": 3, "type": "stat", "title": "평균 CO2 (ppm)",
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 0 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short", "decimals": 1,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "orange", "value": 800 },
+            { "color": "red",    "value": 1000 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+        "rawSql": "SELECT NOW() AS time, ROUND(AVG(co2),1) AS value FROM air_readings WHERE id IN (SELECT MAX(id) FROM air_readings GROUP BY station_id)",
+        "format": "time_series", "refId": "A"
+      }]
+    },
+
+    {
+      "id": 4, "type": "stat", "title": "활성 알람",
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 0 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "red",   "value": 1 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+        "rawSql": "SELECT NOW() AS time, COUNT(*) AS value FROM air_alerts WHERE is_resolved=0",
+        "format": "time_series", "refId": "A"
+      }]
+    },
+
+    {
+      "id": 5, "type": "timeseries", "title": "측정소별 PM2.5 실시간 추이 (최근 30분)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 2, "fillOpacity": 8 },
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "red",   "value": 75 }
+          ]}
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, pm25 FROM air_readings WHERE station_id='ST-001' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "A", "legendFormat": "강남구" },
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, pm25 FROM air_readings WHERE station_id='ST-002' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "B", "legendFormat": "종로구" },
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, pm25 FROM air_readings WHERE station_id='ST-003' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "C", "legendFormat": "마포구" },
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, pm25 FROM air_readings WHERE station_id='ST-004' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "D", "legendFormat": "송파구" },
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, pm25 FROM air_readings WHERE station_id='ST-005' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "E", "legendFormat": "노원구" }
+      ]
+    },
+
+    {
+      "id": 6, "type": "timeseries", "title": "측정소별 CO2 실시간 추이 (최근 30분)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 2, "fillOpacity": 8 },
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "red",   "value": 1000 }
+          ]}
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, co2 FROM air_readings WHERE station_id='ST-001' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "A", "legendFormat": "강남구" },
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, co2 FROM air_readings WHERE station_id='ST-002' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "B", "legendFormat": "종로구" },
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, co2 FROM air_readings WHERE station_id='ST-003' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "C", "legendFormat": "마포구" },
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, co2 FROM air_readings WHERE station_id='ST-004' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "D", "legendFormat": "송파구" },
+        { "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" }, "rawSql": "SELECT recorded_at AS time, co2 FROM air_readings WHERE station_id='ST-005' AND recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at", "format": "time_series", "refId": "E", "legendFormat": "노원구" }
+      ]
+    },
+
+    {
+      "id": 7, "type": "bargauge", "title": "측정소별 AQI",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 20 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 300, "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 51 },
+            { "color": "orange", "value": 101 },
+            { "color": "red",    "value": 201 }
+          ]}
+        }
+      },
+      "options": { "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] }, "displayMode": "gradient" },
+      "targets": [{
+        "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+        "rawSql": "SELECT s.station_name AS metric, r.aqi AS value FROM stations s JOIN air_readings r ON s.station_id = r.station_id WHERE r.id IN (SELECT MAX(id) FROM air_readings GROUP BY station_id) ORDER BY s.station_id",
+        "format": "table", "refId": "A"
+      }]
+    },
+
+    {
+      "id": 8, "type": "gauge", "title": "평균 습도 (%)",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 20 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 100, "unit": "percent",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red",    "value": null },
+            { "color": "green",  "value": 30 },
+            { "color": "blue",   "value": 80 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{
+        "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+        "rawSql": "SELECT NOW() AS time, ROUND(AVG(humidity),1) AS value FROM air_readings WHERE id IN (SELECT MAX(id) FROM air_readings GROUP BY station_id)",
+        "format": "time_series", "refId": "A"
+      }]
+    },
+
+    {
+      "id": 9, "type": "table", "title": "측정소별 최신 측정값",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 26 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "center" } } },
+      "options": { "sortBy": [] },
+      "targets": [{
+        "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+        "rawSql": "SELECT s.station_name AS '측정소', r.pm25 AS 'PM2.5', r.pm10 AS 'PM10', r.co2 AS 'CO2(ppm)', r.temperature AS '기온(℃)', r.humidity AS '습도(%)', r.aqi AS 'AQI', r.grade AS '등급', r.recorded_at AS '측정시각' FROM stations s JOIN air_readings r ON s.station_id = r.station_id WHERE r.id IN (SELECT MAX(id) FROM air_readings GROUP BY station_id) ORDER BY s.station_id",
+        "format": "table", "refId": "A"
+      }]
+    },
+
+    {
+      "id": 10, "type": "table", "title": "활성 알람 목록",
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 32 },
+      "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "center" } } },
+      "targets": [{
+        "datasource": { "type": "mysql", "uid": "${DS_AIRMONITOR_MYSQL}" },
+        "rawSql": "SELECT station_id AS '측정소', alert_type AS '알람유형', value AS '측정값', threshold AS '임계값', message AS '내용', created_at AS '발생시각' FROM air_alerts WHERE is_resolved=0 ORDER BY created_at DESC LIMIT 20",
+        "format": "table", "refId": "A"
+      }]
+    }
+
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["air-quality", "mysql", "realtime"],
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "timezone": "Asia/Seoul",
+  "title": "도시 대기질 모니터링",
+  "uid": "city-air-quality-v1",
+  "version": 1
+}

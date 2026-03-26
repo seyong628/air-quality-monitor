@@ -1,0 +1,215 @@
+[
+  {
+    "id": "flow_air_main",
+    "type": "tab",
+    "label": "대기질 모니터링",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "conf_mysql",
+    "type": "MySQLdatabase",
+    "name": "air_monitor",
+    "host": "127.0.0.1",
+    "port": "3306",
+    "db": "air_monitor",
+    "charset": "UTF8MB4",
+    "tz": "",
+    "multipleStatements": ""
+  },
+  {
+    "id": "conf_tab",
+    "type": "ui_tab",
+    "name": "대기질 대시보드",
+    "icon": "dashboard",
+    "order": 1,
+    "disabled": false,
+    "hidden": false
+  },
+  {
+    "id": "conf_grp_chart",
+    "type": "ui_group",
+    "name": "PM2.5 실시간 추이",
+    "tab": "conf_tab",
+    "order": 1,
+    "disp": true,
+    "width": "12",
+    "collapse": false
+  },
+  {
+    "id": "conf_grp_text",
+    "type": "ui_group",
+    "name": "측정소별 현황",
+    "tab": "conf_tab",
+    "order": 2,
+    "disp": true,
+    "width": "12",
+    "collapse": false
+  },
+  {
+    "id": "conf_grp_gauge",
+    "type": "ui_group",
+    "name": "AQI 게이지",
+    "tab": "conf_tab",
+    "order": 3,
+    "disp": true,
+    "width": "12",
+    "collapse": false
+  },
+
+  {
+    "id": "node_inject",
+    "type": "inject",
+    "z": "flow_air_main",
+    "name": "5초마다",
+    "repeat": "5",
+    "once": true,
+    "onceDelay": 1,
+    "payload": "",
+    "payloadType": "date",
+    "x": 100, "y": 100,
+    "wires": [["node_fn_sql_latest", "node_fn_sql_trend"]]
+  },
+
+  {
+    "id": "node_fn_sql_latest",
+    "type": "function",
+    "z": "flow_air_main",
+    "name": "SQL:최신값",
+    "func": "msg.topic = 'SELECT s.station_name, r.pm25, r.pm10, r.co2, r.temperature, r.humidity, r.aqi, r.grade FROM stations s JOIN air_readings r ON s.station_id = r.station_id WHERE r.id IN (SELECT MAX(id) FROM air_readings GROUP BY station_id) ORDER BY s.station_id';\nreturn msg;",
+    "outputs": 1,
+    "x": 290, "y": 60,
+    "wires": [["node_db_latest"]]
+  },
+
+  {
+    "id": "node_fn_sql_trend",
+    "type": "function",
+    "z": "flow_air_main",
+    "name": "SQL:PM2.5추이",
+    "func": "msg.topic = 'SELECT station_id, pm25, recorded_at FROM air_readings WHERE recorded_at >= NOW() - INTERVAL 30 MINUTE ORDER BY recorded_at ASC';\nreturn msg;",
+    "outputs": 1,
+    "x": 290, "y": 140,
+    "wires": [["node_db_trend"]]
+  },
+
+  {
+    "id": "node_db_latest",
+    "type": "mysql",
+    "z": "flow_air_main",
+    "mydb": "conf_mysql",
+    "name": "DB:최신값",
+    "x": 490, "y": 60,
+    "wires": [["node_fn_text", "node_fn_gauge"]]
+  },
+
+  {
+    "id": "node_db_trend",
+    "type": "mysql",
+    "z": "flow_air_main",
+    "mydb": "conf_mysql",
+    "name": "DB:PM2.5추이",
+    "x": 490, "y": 140,
+    "wires": [["node_fn_chart"]]
+  },
+
+  {
+    "id": "node_fn_text",
+    "type": "function",
+    "z": "flow_air_main",
+    "name": "텍스트 포맷",
+    "func": "var rows = msg.payload;\nmsg.payload = rows.map(function(r){\n  return r.station_name + ' | PM2.5: ' + r.pm25 + ' | AQI: ' + r.aqi + '(' + r.grade + ') | ' + r.temperature + '℃';\n});\nreturn msg;",
+    "outputs": 1,
+    "x": 690, "y": 40,
+    "wires": [["node_ui_text"]]
+  },
+
+  {
+    "id": "node_fn_gauge",
+    "type": "function",
+    "z": "flow_air_main",
+    "name": "AQI 게이지 분배",
+    "func": "var rows = msg.payload;\nrows.forEach(function(r){\n  node.send({ payload: r.aqi, topic: r.station_name });\n});\nreturn null;",
+    "outputs": 1,
+    "x": 690, "y": 80,
+    "wires": [["node_ui_gauge"]]
+  },
+
+  {
+    "id": "node_fn_chart",
+    "type": "function",
+    "z": "flow_air_main",
+    "name": "차트 포맷",
+    "func": "var rows = msg.payload;\nvar series = {};\nrows.forEach(function(r){\n  if(!series[r.station_id]) series[r.station_id] = [];\n  series[r.station_id].push({x: new Date(r.recorded_at).getTime(), y: parseFloat(r.pm25)});\n});\nvar labels = Object.keys(series);\nvar data = labels.map(function(k){ return series[k]; });\nmsg.payload = [{ series: labels, data: data, labels: ['시각'] }];\nreturn msg;",
+    "outputs": 1,
+    "x": 690, "y": 140,
+    "wires": [["node_ui_chart"]]
+  },
+
+  {
+    "id": "node_ui_text",
+    "type": "ui_template",
+    "z": "flow_air_main",
+    "group": "conf_grp_text",
+    "order": 1,
+    "width": "12",
+    "height": "5",
+    "name": "측정소 현황",
+    "format": "<div style=\"font-family:monospace; font-size:13px;\">\n  <div ng-repeat=\"line in msg.payload\" style=\"padding:6px 0; border-bottom:1px solid #333;\">\n    {{line}}\n  </div>\n</div>",
+    "storeOutMessages": false,
+    "fwdInMessages": false,
+    "resendOnRefresh": true,
+    "templateScope": "local",
+    "x": 900, "y": 40,
+    "wires": [[]]
+  },
+
+  {
+    "id": "node_ui_gauge",
+    "type": "ui_gauge",
+    "z": "flow_air_main",
+    "name": "AQI",
+    "group": "conf_grp_gauge",
+    "order": 1,
+    "width": "4",
+    "height": "4",
+    "gtype": "gage",
+    "title": "AQI",
+    "label": "",
+    "format": "{{value}}",
+    "min": 0,
+    "max": 300,
+    "colors": ["#4caf50","#ff9800","#f44336"],
+    "seg1": "100",
+    "seg2": "200",
+    "x": 900, "y": 80,
+    "wires": []
+  },
+
+  {
+    "id": "node_ui_chart",
+    "type": "ui_chart",
+    "z": "flow_air_main",
+    "name": "PM2.5 추이",
+    "group": "conf_grp_chart",
+    "order": 1,
+    "width": "12",
+    "height": "6",
+    "label": "PM2.5 (μg/m³)",
+    "chartType": "line",
+    "legend": "true",
+    "xformat": "HH:mm:ss",
+    "interpolate": "linear",
+    "nodata": "데이터 없음",
+    "dot": false,
+    "ymin": "0",
+    "ymax": "",
+    "removeOlder": 1,
+    "removeOlderPoints": "",
+    "removeOlderUnit": "3600",
+    "cutout": 0,
+    "useOneColor": false,
+    "x": 900, "y": 140,
+    "wires": []
+  }
+]
